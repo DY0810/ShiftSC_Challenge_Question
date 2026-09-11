@@ -1,0 +1,23 @@
+{
+  "name": "shiftsc-privacy-choices",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "node --env-file-if-exists=.env.local scripts/dev.mjs",
+    "capture:sources": "node scripts/capture-sources.mjs",
+    "test:browser": "node scripts/browser-check.mjs",
+    "package": "node scripts/package.mjs",
+    "check": "npm test && node scripts/check-package.mjs"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

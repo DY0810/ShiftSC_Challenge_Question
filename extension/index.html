@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Privacy Choices</title>
+    <link rel="icon" href="icons/icon-32.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to service review</a>
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand" href="index.html" aria-label="Privacy Choices home">
+          <img src="icons/icon-48.png" width="34" height="34" alt="">
+          <span>Privacy Choices</span>
+        </a>
+        <div class="header-tools">
+          <span id="storage-state" class="local-state">Checking local storage</span>
+          <button id="settings-button" class="icon-button" type="button" aria-label="Settings" title="Settings">
+            <img src="icons/settings.svg" width="20" height="20" alt="">
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">YOUR PRIVACY, YOUR CALL</p>
+          <h1>Before you visit</h1>
+          <p class="subheading">Decide what you are comfortable sharing.</p>
+        </div>
+        <span class="scope-label">Desktop browser only</span>
+      </div>
+      <ol class="steps" aria-label="Review progress">
+        <li id="step-preferences" aria-current="step"><span>1</span>Preferences</li>
+        <li id="step-findings"><span>2</span>Findings</li>
+        <li id="step-reductions"><span>3</span>Reductions</li>
+        <li id="step-decision"><span>4</span>Your decision</li>
+      </ol>
+
+      <p id="app-notice" class="notice warning" role="status" hidden></p>
+      <section class="service-section" aria-labelledby="service-title">
+        <div class="service-main">
+          <div class="service-heading">
+            <h2 id="service-title">Choose a service</h2>
+            <span class="small-label">3 supported services</span>
+          </div>
+          <form id="service-form">
+            <label class="input-label" for="service-input">Service name or URL</label>
+            <div class="search-row">
+              <input id="service-input" name="service" type="text" value="Google Maps" placeholder="Google Maps, Quizlet, or ChatGPT" maxlength="2048" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="service-message">
+              <button id="analyze" class="button primary" type="submit" disabled>Analyze policy<img src="icons/arrow-right.svg" width="17" height="17" alt=""></button>
+            </div>
+          </form>
+        </div>
+        <div class="service-secondary">
+          <div id="service-shortcuts" class="service-shortcuts" aria-label="Supported services"></div>
+          <p id="service-message" class="small-status" role="status">Google Maps selected. No company page has been opened.</p>
+        </div>
+        <div id="setup-notice" class="setup-notice">
+          <div class="setup-copy"><img src="icons/lock-keyhole.svg" width="18" height="18" alt=""><span id="setup-message">Checking saved setup.</span></div>
+          <button id="setup-button" class="text-button" type="button">Configure access token</button>
+        </div>
+        <p class="lookup-disclosure">Only the service ID goes to the analysis backend. Your preferences stay on this device.</p>
+      </section>
+      <div class="workspace-grid">
+        <aside class="preferences" aria-labelledby="preferences-title">
+          <div class="section-heading">
+            <h2 id="preferences-title">Your preferences</h2>
+            <span class="small-label">LOCAL ONLY</span>
+          </div>
+          <p class="muted">Selected means acceptable to you, not permission granted to the service.</p>
+          <fieldset id="data-group">
+            <legend>Information I can share</legend>
+            <div class="group-tools">
+              <span id="data-count" class="muted">0 of 8 selected</span>
+              <div class="text-actions">
+                <button id="data-none" type="button" aria-label="Select no information types">None</button>
+                <button id="data-all" type="button" aria-label="Select all information types">All</button>
+              </div>
+            </div>
+            <div id="data-preferences" class="choice-list"></div>
+          </fieldset>
+          <details id="purpose-options" class="preference-disclosure">
+            <summary><span>Optional uses I accept</span><span id="purpose-preview" class="summary-count">0 of 4</span></summary>
+            <fieldset id="purpose-group">
+              <legend class="sr-only">Optional uses I accept</legend>
+              <div class="group-tools">
+                <span id="purpose-count" class="muted">0 of 4 selected</span>
+                <div class="text-actions">
+                  <button id="purpose-none" type="button" aria-label="Select no optional uses">None</button>
+                  <button id="purpose-all" type="button" aria-label="Select all optional uses">All</button>
+                </div>
+              </div>
+              <div id="purpose-preferences" class="choice-list"></div>
+            </fieldset>
+          </details>
+          <p class="footnote">Essential processing may still be required to use a service.</p>
+          <div class="browser-control-summary">
+            <h3>Browser location</h3>
+            <p id="browser-status" class="muted" role="status">Not yet checked.</p>
+            <p class="footnote">The location rule covers all <code>https://www.google.com/*</code> pages, including other Google pages. It persists until restored.</p>
+            <button id="restore-location" class="button secondary compact" type="button" disabled>Restore extension rule</button>
+            <p id="control-status" class="small-status" role="status"></p>
+          </div>
+        </aside>
+
+        <div id="workspace" class="review-workspace" tabindex="-1">
+          <section id="empty-state" class="empty-state" aria-labelledby="empty-title">
+            <div class="empty-heading"><p class="eyebrow">POLICY REVIEW</p><span class="badge">Not requested</span></div>
+            <div class="empty-message">
+              <img src="icons/file-search.svg" alt="" width="44" height="44">
+              <h2 id="empty-title">No findings yet</h2>
+              <p>No policy analysis has been received for this review.</p>
+            </div>
+            <dl class="review-ledger">
+              <div><dt>Selected service</dt><dd id="empty-service">Google Maps</dd></div>
+              <div><dt>Acceptable information</dt><dd id="empty-preferences">0 of 8 types</dd></div>
+              <div><dt>Collection assessment</dt><dd>Not assessed</dd></div>
+            </dl>
+          </section>
+          <div id="loading-state" class="loading-state" role="status" hidden>
+            <div class="loading-heading"><div><strong>Waiting for policy analysis</strong><p>Contacting the backend, not the service from this browser.</p></div><button id="cancel-analysis" class="button secondary compact" type="button">Cancel</button></div>
+            <div class="loading-skeleton" aria-hidden="true">
+              <div class="skeleton-title"></div><div></div><div class="skeleton-short"></div>
+              <div class="skeleton-title"></div><div></div><div class="skeleton-short"></div>
+            </div>
+          </div>
+          <p id="analysis-error" class="notice danger" role="alert" hidden></p>
+
+          <section id="results" class="results" aria-labelledby="findings-title" hidden>
+            <div id="fixture-banner" class="notice fixture" role="status" hidden><strong>Fixture test response</strong><span>Synthetic test evidence. This is not live policy analysis and must not be treated as real findings.</span></div>
+            <div class="section-heading result-heading">
+              <div><p id="analysis-service" class="eyebrow"></p><h2 id="findings-title" tabindex="-1">Policy findings</h2></div>
+              <span id="analysis-mode" class="badge"></span>
+            </div>
+            <p id="analysis-date" class="muted"></p>
+            <p class="evidence-boundary">AI interpretations of company disclosures, not an independent audit. Check the evidence; missing information is not proof of no collection.</p>
+            <div id="warnings" class="warnings" aria-label="Evidence warnings"></div>
+            <p id="verification-pending" class="notice warning" role="status" hidden>Rechecking the effective browser control. Earlier location verification is not current while this check is pending.</p>
+            <div id="finding-summary" class="finding-summary" aria-live="polite"></div>
+            <div id="findings-list"></div>
+            <section class="source-section" aria-labelledby="sources-title">
+              <h3 id="sources-title">Sources &amp; retrieval</h3>
+              <div id="sources-list"></div>
+            </section>
+            <div class="section-footer">
+              <p class="muted">Preferences are a comparison, not a safety rating.</p>
+              <button id="find-reductions" class="button primary" type="button">Find reductions<img src="icons/arrow-right.svg" width="17" height="17" alt=""></button>
+            </div>
+          </section>
+
+          <section id="reductions" class="reductions" aria-labelledby="reductions-title" hidden>
+            <div class="section-heading"><h2 id="reductions-title" tabindex="-1">Reduce what you can</h2><span class="small-label">AVAILABLE CONTROLS</span></div>
+            <p class="muted">Guided account changes are user-reported and remain unresolved. Only the effective browser-location block can be verified here.</p>
+            <div id="actions-list"></div>
+            <div class="section-footer">
+              <p class="muted">No guide or source opens without confirmation.</p>
+              <button id="review-decision" class="button primary" type="button">Review remaining risks<img src="icons/arrow-right.svg" width="17" height="17" alt=""></button>
+            </div>
+          </section>
+
+          <section id="decision" class="decision" aria-labelledby="decision-title" hidden>
+            <p class="eyebrow">THE CHOICE IS YOURS</p>
+            <h2 id="decision-title" tabindex="-1">Still want to visit?</h2>
+            <p id="risk-summary"></p>
+            <ul id="remaining-risks" class="risk-list"></ul>
+            <p class="evidence-boundary">This review cannot prevent all tracking, hide your IP address, or protect native apps. Account settings, typed information, and essential processing may still expose information.</p>
+            <label class="acknowledgment" for="acknowledge">
+              <input id="acknowledge" type="checkbox">
+              <span>I understand the remaining risks and evidence gaps. My preferences do not change this service's policy.</span>
+            </label>
+            <div class="decision-actions">
+              <button id="visit-service" class="button primary" type="button" disabled>Visit service<img src="icons/arrow-up-right.svg" width="18" height="18" alt=""></button>
+              <button id="do-not-visit" class="button secondary" type="button">Do not visit</button>
+            </div>
+            <p id="decision-status" class="small-status" role="status"></p>
+          </section>
+        </div>
+      </div>
+      <footer class="privacy-disclosure">
+        <h2>What leaves this device</h2>
+        <p>Live lookup sends <code>serviceId</code> and your access token to the configured private backend. Preferences stay in local extension storage and are not included in analysis requests. The backend, a public reader when needed, and OpenAI process public policy text. Infrastructure metadata, such as IP addresses and request logs, may exist.</p>
+        <p>Opening a source, guide, or service contacts that company and may send IP addresses, cookies, and account-session information. The saved access token is local to this browser profile, not encrypted storage.</p>
+      </footer>
+    </main>
+
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <form id="settings-form">
+        <h2 id="settings-title">Analysis access</h2>
+        <p id="token-state" class="muted">No access token saved.</p>
+        <label class="input-label" for="token-input">Access token</label>
+        <input id="token-input" type="password" autocomplete="off" maxlength="2048" spellcheck="false" placeholder="Enter your private demo token" aria-describedby="token-help">
+        <p id="token-help" class="footnote">Stored only in this browser profile. This is the backend access token, not an OpenAI API key.</p>
+        <p class="footnote">Backend: <code id="api-address"></code></p>
+        <p id="settings-status" class="small-status" role="status"></p>
+        <div class="dialog-actions">
+          <button id="save-token" class="button primary" type="submit">Save token</button>
+          <button id="remove-token" class="button secondary" type="button">Remove token</button>
+          <button id="close-settings" class="text-button" type="button">Close</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-description confirm-detail">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-description"></p>
+      <p id="confirm-detail" class="notice warning"></p>
+      <code id="confirm-url" class="destination"></code>
+      <div class="dialog-actions">
+        <button id="confirm-cancel" class="button secondary" type="button" autofocus>Cancel</button>
+        <button id="confirm-proceed" class="button primary" type="button">Continue</button>
+      </div>
+    </dialog>
+  </body>
+</html>

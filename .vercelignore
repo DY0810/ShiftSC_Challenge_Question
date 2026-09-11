@@ -1,0 +1,8 @@
+.env*
+node_modules/
+test/
+output/
+tmp/
+dist/
+WORKFLOW.md
+DECISIONS.md

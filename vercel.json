@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "framework": null,
+  "buildCommand": null,
+  "outputDirectory": "public",
+  "functions": {
+    "api/analyze.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "data/snapshots/**"
+    }
+  }
+}
