@@ -10,28 +10,38 @@ const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
 const server = createServer(async (req, res) => {
   res.status = (code) => { res.statusCode = code; return res; };
   res.json = (value) => { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(value)); };
-  const path = new URL(req.url, "http://127.0.0.1").pathname;
-  if (path === "/api/analyze") {
-    let body = "";
-    for await (const chunk of req) {
-      body += chunk;
-      if (Buffer.byteLength(body) > 512) {
-        res.status(413).json({ error: { code: "too_large", message: "Request too large." } });
-        return;
-      }
-    }
-    req.body = body;
-    try { await handler(req, res); } catch { res.status(500).json({ error: { code: "server_error", message: "Analysis unavailable." } }); }
-    return;
-  }
   try {
-    const file = resolve(root, "." + decodeURIComponent(path === "/" ? "/index.html" : path));
-    if (!file.startsWith(root + "/")) throw new Error();
-    res.setHeader("Content-Type", types[extname(file)] ?? "application/octet-stream");
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.end(await readFile(file));
-  } catch { res.statusCode = 404; res.end("Not found"); }
+    const path = new URL(req.url, "http://127.0.0.1").pathname;
+    if (path === "/api/analyze") {
+      let body = "";
+      for await (const chunk of req) {
+        body += chunk;
+        if (Buffer.byteLength(body) > 512) {
+          res.status(413).json({ error: { code: "too_large", message: "Request too large." } });
+          return;
+        }
+      }
+      req.body = body;
+      await handler(req, res);
+      return;
+    }
+    try {
+      const file = resolve(root, "." + decodeURIComponent(path === "/" ? "/index.html" : path));
+      if (!file.startsWith(root + "/")) throw new Error();
+      res.setHeader("Content-Type", types[extname(file)] ?? "application/octet-stream");
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.end(await readFile(file));
+    } catch { res.statusCode = 404; res.end("Not found"); }
+  } catch (error) {
+    if (res.destroyed || res.writableEnded) return;
+    if (res.headersSent) { res.destroy(); return; }
+    const invalidUrl = error.code === "ERR_INVALID_URL";
+    res.status(invalidUrl ? 400 : 500).json({ error: {
+      code: invalidUrl ? "invalid_request" : "server_error",
+      message: invalidUrl ? "Invalid request URL." : "Analysis unavailable."
+    } });
+  }
 });
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {

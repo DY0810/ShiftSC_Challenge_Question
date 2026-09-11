@@ -6,3 +6,5 @@ tmp/
 dist/
 WORKFLOW.md
 DECISIONS.md
+design-qa.md
+docs/

@@ -7,3 +7,5 @@ tmp/
 output/
 .DS_Store
 .vercel
+WORKFLOW.md
+design-qa.md

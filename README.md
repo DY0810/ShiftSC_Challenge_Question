@@ -17,13 +17,25 @@ and apply a narrowly verified browser-location control.
 
 ## Install
 
+Use Node.js 22. Build the extension from a fresh clone:
+
+```sh
+npm ci
+node scripts/setup-local.mjs
+npm run package
+npm run dev
+```
+
 Extract `dist/privacy-choices-extension.zip`, open `chrome://extensions`, enable
 Developer mode, choose **Load unpacked**, and select the extracted folder that
 contains `manifest.json`. Open Privacy Choices from the extension toolbar.
 
-Enter the private `DEMO_ACCESS_TOKEN` from `.env.local` in the extension's settings.
+This package connects to the local backend at `http://127.0.0.1:4317`.
+Enter the generated `DEMO_ACCESS_TOKEN` from `.env.local` in the extension's settings.
 It is not your OpenAI key. Share the reviewer token privately, never in a public PDF
-or repository. Provider keys must never be placed in the extension.
+or repository. Provider keys must never be placed in the extension. A package
+targeting the hosted demo needs the owner's separate private reviewer token;
+your locally generated token will not authenticate to that deployment.
 
 ## Activate the Backend
 
@@ -33,8 +45,9 @@ or repository. Provider keys must never be placed in the extension.
    application's hard cap.
 2. Create a persistent Upstash Redis instance with no eviction of the spending
    key, then configure the same variables as **Production** environment variables
-   in this Vercel project. Do not overwrite the existing private demo token.
-3. Redeploy with `vercel deploy --prod --scope dongyeop-7926s-projects`.
+   in your Vercel project, including `DEMO_ACCESS_TOKEN`. Do not overwrite a
+   running demo's token unless you intend to revoke its reviewers' access.
+3. Deploy with `vercel deploy --prod` to your own project.
 4. Run `node --env-file=.env.local scripts/verify-hosted.mjs`. An authenticated
    check can make one paid model request after setup, within the reserved budget.
 5. Re-run the model tests on all three services before calling the demo fully
@@ -108,11 +121,15 @@ profile; requests before confirmation must not.
 
 ## Evidence and Showcase
 
-`WORKFLOW.md` records gates and handoff; `DECISIONS.md` preserves user choices.
-The PDF builder is `scripts/build-showcase.py`; the final two-page result is
+[DECISIONS.md](DECISIONS.md) preserves the product choices.
+[The two-page showcase](docs/Privacy_Choices_ShiftSC_Showcase.pdf) explains the
+implementation and rationale; [the security review](docs/SECURITY_REVIEW.md)
+records the publication checks and their limits.
+The PDF builder is `scripts/build-showcase.py`; local regeneration writes
 `output/pdf/Privacy_Choices_ShiftSC_Showcase.pdf`. Its screenshots must come from
 the real browser check and retain the fixture label while live analysis is not
-verified. Update evidence before regenerating.
+verified. Update evidence before regenerating. Local QA outputs and private
+workflow notes are not distributed in this repository.
 
 ## Design Refinement
 
@@ -121,8 +138,8 @@ the service lookup before preferences on narrow screens, and keeps supporting
 policy details expandable. Keyboard focus and expanded evidence survive browser
 verification refreshes. Loading motion respects reduced-motion preferences.
 
-`design-qa.md` records the original Figma reference, the independent lookup target,
-normalized before/after comparisons, accepted deviations, and final QA results.
-Run `scripts/compare-design.py` after browser QA to regenerate comparison images.
+The browser check covers desktop and narrow layouts, text fit, keyboard focus,
+local fonts, and reduced motion. `scripts/compare-design.py` is an optional local
+comparison tool and needs separately supplied design reference images.
 The PDF uses the local static Geist files in `data/fonts/`; its screenshots remain
 explicitly fixture-backed until actual live analysis has been verified.

@@ -153,7 +153,7 @@ right = LEFT + 308
 text("<b>4 conflicts became 3.</b> Chrome's actual location setting changed to Block. "
      "The synthetic IP-location, content, and activity findings stayed unresolved.",
      right, figure_top + 3, 220, SMALL)
-text("<b>32 automated checks passed.</b> Includes an isolated real-Redis test: "
+text("<b>36 automated checks passed.</b> Includes an isolated real-Redis test: "
      "100 concurrent reservation attempts accepted 71 and reserved $4.97, below the $5 limit.",
      right, figure_top + 68, 220, SMALL)
 text("<b>Evidence boundary.</b> This is a real extension screenshot with visibly labeled "
@@ -191,7 +191,7 @@ refs = [
 links = " &nbsp; | &nbsp; ".join(f'<link href="{url}" color="#22694c">{label}</link>' for label, url in refs)
 text("<b>Sources and evidence:</b> " + links, LEFT, references_top, WIDTH, SMALL)
 text("Public policies were captured September 11, 2026 (UTC). Source details, test commands, "
-     "and the remaining setup steps accompany the code in README.md and WORKFLOW.md.",
+     "and the remaining setup steps accompany the code in README.md and DECISIONS.md.",
      LEFT, references_top + 26, WIDTH, SMALL)
 footer(2)
 C.save()
