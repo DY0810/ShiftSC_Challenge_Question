@@ -62,10 +62,24 @@ after its snapshot. The separate frozen initial-commit diff accounted for all
 63 initial files, with explicit binary and dependency-content exclusions.
 The remediation review is focused on the changed request boundary.
 
-Live model analysis remains disabled until OpenAI and persistent Upstash
-credentials are configured. No paid model call, production Redis persistence
-or eviction policy, actual third-party collection behavior, or model semantic
-accuracy is established by these checks.
+That initial audit preceded provider activation. The September 11 MVP update
+configured the provider credentials privately, exercised live analysis for all
+three services, and passed the hosted-extension workflow. Upstash persistence
+and disabled eviction were checked in its console. Actual third-party collection
+behavior and model semantic accuracy remain unverified.
+
+## MVP Update
+
+The new section-based pipeline has 57 passing local tests, including complete
+text coverage, consecutive evidence ranges, separate evidence-review contracts,
+budget checks before every model call, cancellation, cached section reuse, and
+unknown-purpose handling. A real-Redis check confirms 250 small reservations stop
+at $5 and earlier reservations remain counted.
+
+The installed extension passed against actual hosted responses for Maps, Quizlet,
+and ChatGPT. This is executable proof of the workflow, not independent semantic
+verification. The earlier four audit reports do not represent a fresh four-tool
+audit of this larger pipeline update.
 
 Generated output, local workflow notes, environment files, and deployment
 metadata are excluded from source control. The deliberately published PDF

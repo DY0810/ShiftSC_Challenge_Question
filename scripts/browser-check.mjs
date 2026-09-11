@@ -27,7 +27,7 @@ const fixture = (serviceId) => {
   return {
     serviceId, analyzedAt: new Date().toISOString(), mode: responseMode === "mixed" ? "mixed" : "fixture",
     claims: definitions.map(([id, dataCategory, label, purposes]) => ({
-      id, dataCategory, label, purposes,
+      id, dataCategory, label, purposes: responseMode === "unknown-purpose" && id === "content" ? [] : purposes,
       summary: "Synthetic test finding used to exercise the preference comparison. This is not a live policy assertion.",
       condition: "Synthetic test scenario; actual practices require verified policy evidence.",
       retention: "Not assessed by this fixture.", sourceId: service.sources[0].id,
@@ -260,6 +260,11 @@ try {
   await page.locator("#service-input").fill("https://quizlet.com.attacker.test");
   assert.equal(await page.locator("#analyze").isDisabled(), true);
   checks.push("Quizlet guidance remains user-reported; unsupported lookalike domains cannot be analyzed; results fit a narrow viewport.");
+  responseMode = "unknown-purpose";
+  await analyze(page, "ChatGPT");
+  assert.equal(await page.locator("#findings-list .badge.mismatch").count(), 1);
+  assert.ok((await page.locator('[data-claim="content"] .reason').textContent()).includes("purpose is not established"));
+  checks.push("Unknown purposes remain visible and unresolved even when all data types and listed uses are accepted.");
   assert.deepEqual(errors, []);
   checks.push("Bundled Geist loads; lookup precedes preferences in the mobile first viewport; local counts update; evidence expansion and keyboard focus survive rechecks; loading respects reduced motion.");
   const report = {

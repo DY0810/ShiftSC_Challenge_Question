@@ -36,8 +36,9 @@ export function classifyClaims(claims, preferences, browserState = {}, serviceId
     const disallowedData = !acquisitionBlocked && !prefs.allowedData.includes(claim.dataCategory);
     const disallowedPurposes = (claim.purposes ?? [])
       .filter((purpose) => purpose !== "essential" && !prefs.allowedPurposes.includes(purpose));
-    const status = disallowedData || disallowedPurposes.length ? "mismatch"
+    const purposeUnknown = !claim.purposes?.length;
+    const status = disallowedData || disallowedPurposes.length || purposeUnknown ? "mismatch"
       : acquisitionBlocked ? "browser-verified" : "within-preferences";
-    return { ...claim, status, disallowedData, disallowedPurposes, acquisitionBlocked };
+    return { ...claim, status, disallowedData, disallowedPurposes, acquisitionBlocked, purposeUnknown };
   });
 }

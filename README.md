@@ -8,34 +8,42 @@ and apply a narrowly verified browser-location control.
 
 - The Chrome extension and private backend are implemented.
 - Hosted endpoint: `https://shiftsc-privacy-choices.vercel.app/api/analyze`.
-- Live AI analysis is **not activated** until the OpenAI and Upstash values below
-  are configured. The endpoint rejects unauthenticated requests and returns an
-  explicit setup error for authenticated requests while storage is missing.
+- The owner's OpenAI and Upstash credentials are configured in Vercel. Reviewers
+  need only the hosted extension package and the private demo access token.
+  A fresh local checkout still needs its own provider configuration.
+- The backend analyzes small policy sections and checks proposed explanations
+  against their cited passages in a separate model call. This is not a guarantee
+  of semantic accuracy or a complete inventory of collected information.
 - Browser QA uses clearly labeled synthetic policy responses. Real Chrome
   location settings are tested, but this is not live model or account proof.
 - Five official source snapshots are included; see `data/SOURCE_STATUS.md`.
 
 ## Install
 
-Use Node.js 22. Build the extension from a fresh clone:
+Download the ready-made extension ZIP and showcase PDF from the repository's
+**Releases** page. Extract the extension ZIP, then load its folder in desktop
+Chrome using `chrome://extensions` -> Developer mode -> Load unpacked.
+Enter the private demo token supplied separately by the owner.
+
+The public download does not include access credentials. A reviewer does not
+need their own OpenAI account or a local server.
+
+Use Node.js 22 to build the hosted extension from a fresh clone:
 
 ```sh
 npm ci
-node scripts/setup-local.mjs
-npm run package
-npm run dev
+API_BASE=https://shiftsc-privacy-choices.vercel.app npm run package
 ```
 
 Extract `dist/privacy-choices-extension.zip`, open `chrome://extensions`, enable
 Developer mode, choose **Load unpacked**, and select the extracted folder that
 contains `manifest.json`. Open Privacy Choices from the extension toolbar.
 
-This package connects to the local backend at `http://127.0.0.1:4317`.
-Enter the generated `DEMO_ACCESS_TOKEN` from `.env.local` in the extension's settings.
-It is not your OpenAI key. Share the reviewer token privately, never in a public PDF
-or repository. Provider keys must never be placed in the extension. A package
-targeting the hosted demo needs the owner's separate private reviewer token;
-your locally generated token will not authenticate to that deployment.
+Enter the owner's private demo token in the extension's settings.
+It is not your OpenAI key. Share it privately, never in a public PDF or repository.
+Provider keys must never be placed in the extension. Once the hosted package is
+built, reviewers do not need Node.js or a local server. A locally generated token
+does not authenticate to the owner's hosted deployment.
 
 ## Activate the Backend
 
@@ -48,10 +56,13 @@ your locally generated token will not authenticate to that deployment.
    in your Vercel project, including `DEMO_ACCESS_TOKEN`. Do not overwrite a
    running demo's token unless you intend to revoke its reviewers' access.
 3. Deploy with `vercel deploy --prod` to your own project.
-4. Run `node --env-file=.env.local scripts/verify-hosted.mjs`. An authenticated
-   check can make one paid model request after setup, within the reserved budget.
-5. Re-run the model tests on all three services before calling the demo fully
-   verified; regenerate the PDF if the live-verification status changes.
+4. Run `node --env-file=.env.local scripts/verify-hosted.mjs`. It checks
+   authentication and all three services; uncached analyses make paid extraction
+   and review calls within the reserved allowance. `SERVICE_IDS=quizlet,chatgpt`
+   limits a focused check to those services without claiming Maps was tested.
+5. Run `node --env-file=.env.local scripts/hosted-extension-check.mjs` after
+   packaging, then inspect the explanations and their evidence. Passing transport,
+   schema, and browser checks alone does not establish semantic correctness.
 
 The backend needs a real Redis service, not a per-function in-memory substitute.
 Do not delete/reset `shiftsc:privacy:budget:v1` or replace its database while this
@@ -100,16 +111,36 @@ profile; requests before confirmation must not.
   `store: false`. Only public policy content goes to the model, never preferences,
   user URLs, account cookies, or conversations. This does not promise zero provider
   retention or no infrastructure metadata.
-- Whole-sentence matching checks quotation integrity, **not semantic entailment**.
-  Model summaries, categories, retention interpretations, and purposes can still
-  be wrong. The UI labels them AI interpretations and shows policy evidence.
-- The $5 application allowance reserves $0.07 before each model attempt; at most
-  71 attempts reserve $4.97. Reservations persist even if a model call times out.
-  Identical concurrent analyses use a distributed lock and content-hash cache.
-- The bound uses <=180,000 UTF-8 request bytes, <=8,000 output tokens, and the
+- Every available source is split into consecutive sections of at most 8,000
+  UTF-8 bytes, with adjacent sentence context. Nothing is silently truncated.
+  The 32-section ceiling fails explicitly if a source cannot fit.
+- Each section yields at most three candidate findings. The server resolves
+  sentence ranges to intact quotations; another model call checks each field,
+  affirmative collection, and desktop-browser applicability against the cited
+  passage and its immediate neighbors. Unsupported candidates are excluded.
+- If a collection fact is supported but its purpose, condition, or retention
+  detail is not, that detail is replaced with an explicit unknown. An unknown
+  purpose remains unresolved even when all listed preference options are accepted.
+- Whole-sentence matching proves quotation integrity, **not semantic entailment**.
+  A second AI judgment can also be wrong. Excluded findings and source gaps are
+  disclosed; missing findings are not evidence that information is not collected.
+- Three sections run at a time. Any failed or refused section stops the analysis
+  without publishing partial findings or automatically retrying the provider.
+  Completed section checks and complete analyses are cached by content/version
+  for seven days, so a later user-initiated attempt can reuse completed work.
+- The $5 allowance reserves $0.02 before **each** extraction or review call.
+  Reservations persist even when calls fail. The existing ledger is retained,
+  including all earlier $0.07 reservations; it is never reset by deployment.
+  With an empty ledger, at most 250 small calls fit. A review uses multiple calls.
+- Each call is bounded to <=32,000 UTF-8 request bytes and <=4,000 output tokens
+  (<=1,800 for review). The reservation includes message-overhead margin at the
   documented September 11, 2026 prices of $0.25/M input and $2/M output tokens.
   Recheck prices before reactivating a later demo. Hosting/storage charges are
   separate; no paid infrastructure upgrades were authorized.
+- Provider calls time out after 75 seconds, section work after 160 seconds, and
+  the extension after 210 seconds. The Vercel function limit is 240 seconds.
+  Initial reviews may take over a minute; cached results avoid new model calls,
+  but source retrieval still runs to check the content hash.
 - Google Maps: the native geolocation rule covers all `https://www.google.com/*`
   pages in the regular profile, persists until removed, and does not hide IP
   location, typed addresses, prior data, or downstream uses.

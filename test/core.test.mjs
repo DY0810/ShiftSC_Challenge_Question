@@ -55,3 +55,10 @@ test("a current location block does not verify that previously acquired location
   assert.equal(result[0].disallowedData, false);
   assert.deepEqual(result[0].disallowedPurposes, ["advertising"]);
 });
+
+test("an unknown purpose remains unresolved even when the data type and all listed uses are accepted", () => {
+  const result = classifyClaims([{ id: "unknown", dataCategory: "content", purposes: [] }],
+    { allowedData: ["content"], allowedPurposes: ["analytics", "advertising", "training", "sharing"] }, {}, "chatgpt");
+  assert.equal(result[0].status, "mismatch");
+  assert.equal(result[0].purposeUnknown, true);
+});

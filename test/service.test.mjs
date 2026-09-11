@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { analyzeRequest } from "../lib/service.mjs";
+import { PIPELINE_TIMEOUT_MS } from "../lib/analysis.mjs";
 
 const token = "test-only-access-token-at-least-32-characters";
 const env = { DEMO_ACCESS_TOKEN: token, OPENAI_API_KEY: "test-only-not-a-real-key",
@@ -14,6 +16,17 @@ const analysis = { claims: [{
   sourceId: "openai-privacy", evidenceQuote: "We collect your submitted content."
 }], warnings: [] };
 const request = (body = { serviceId: "chatgpt" }, authorization = `Bearer ${token}`) => ({ body, authorization });
+const coverage = { method: "section-extraction-and-evidence-check", sectionsTotal: 1, sectionsCompleted: 1, rejectedFindings: 0 };
+const extracted = { ...analysis, claims: analysis.claims.map(({ sourceId, evidenceQuote, ...claim }) =>
+  ({ ...claim, evidenceStart: 0, evidenceEnd: 0 })) };
+const modelResult = (request, usage = {}) => ({
+  analysis: request.text.format.name === "privacy_section" ? extracted : {
+    checks: JSON.parse(request.input[1].content).claims.map(({ id }) => ({ id,
+      labelSupported: true, summarySupported: true, categorySupported: true, purposesSupported: true,
+      conditionSupported: true, retentionSupported: true, collectionAffirmed: true, browserScopeSupported: true
+    }))
+  }, usage
+});
 
 test("unauthorized or malformed analysis never reaches source, storage, or model providers", async () => {
   let external = 0;
@@ -44,7 +57,7 @@ test("a grounded cached result costs no model call or budget reservation", async
     env, retrieve: async () => sources,
     redis: async (command) => {
       commands.push(command);
-      return command[0] === "GET" ? JSON.stringify({ ...analysis, analyzedAt: "2026-09-01T00:00:00.000Z" }) : 1;
+      return command[0] === "GET" ? JSON.stringify({ ...analysis, coverage, analyzedAt: "2026-09-01T00:00:00.000Z" }) : 1;
     },
     callModel: async () => { throw new Error("must not call a model for cache hits"); }
   });
@@ -59,7 +72,7 @@ test("a source snapshot stays marked snapshot even after a new successful model 
   const result = await analyzeRequest(request(), {
     env, retrieve: async () => sources.map((source) => ({ ...source, method: "snapshot", capturedAt: "2026-09-01T00:00:00.000Z", retrievedAt: null })),
     redis: async (command) => { commands.push(command); return command[0] === "GET" ? null : command[0] === "SET" ? "OK" : 1; },
-    callModel: async () => ({ analysis, usage: { input_tokens: 100, output_tokens: 50 } })
+    callModel: async (request) => modelResult(request, { input_tokens: 100, output_tokens: 50 })
   });
   assert.equal(result.status, 200);
   assert.equal(result.body.mode, "snapshot");
@@ -102,20 +115,20 @@ test("concurrent identical analyses share an in-flight lock and spend only one r
   };
   const results = await Promise.all(Array.from({ length: 10 }, () => analyzeRequest(request(), {
     env, redis, retrieve: async () => sources,
-    callModel: async () => {
+    callModel: async (request) => {
       modelCalls++;
       await new Promise((resolve) => setTimeout(resolve, 20));
-      return { analysis, usage: { input_tokens: 100, output_tokens: 20 } };
+      return modelResult(request, { input_tokens: 100, output_tokens: 20 });
     }
   })));
-  assert.equal(modelCalls, 1);
-  assert.equal(reservations, 1);
+  assert.equal(modelCalls, 2);
+  assert.equal(reservations, 2);
   assert.equal(results.filter((result) => result.status === 200).length, 1);
   assert.equal(results.filter((result) => result.body.error?.code === "analysis_in_progress").length, 9);
 });
 
 test("unsupported assurance in model warnings cannot escape through fresh output or cache", async () => {
-  const bad = { ...analysis, warnings: ["Independently verified: no tracking and zero collection."] };
+  const bad = { ...extracted, warnings: ["Independently verified: no tracking and zero collection."] };
   for (const cached of [null, JSON.stringify({ ...bad, analyzedAt: new Date().toISOString() })]) {
     const result = await analyzeRequest(request(), {
       env, retrieve: async () => sources,
@@ -125,4 +138,102 @@ test("unsupported assurance in model warnings cannot escape through fresh output
     assert.equal(result.status, 502);
     assert.equal(result.body.error.code, "analysis_unverified");
   }
+});
+
+test("provider diagnostics exclude raw errors, secrets, and unrecognized codes", async (t) => {
+  const logs = [];
+  t.mock.method(console, "error", (...args) => logs.push(args));
+  const secret = "sensitive-provider-message";
+  const result = await analyzeRequest(request(), {
+    env, retrieve: async () => sources,
+    redis: async (command) => command[0] === "GET" ? null : command[0] === "SET" ? "OK" : 1,
+    fetchImpl: async () => new Response(JSON.stringify({ error: { code: secret, message: secret } }), { status: 403 })
+  });
+  assert.equal(result.status, 502);
+  assert.deepEqual(logs[0], ["privacy_model_rejected", { status: 403, code: "unknown" }]);
+  assert.ok(!JSON.stringify(logs).includes(secret));
+  assert.ok(!JSON.stringify(logs).includes(env.OPENAI_API_KEY));
+});
+
+test("analysis lock and client deadlines cover the model and source retrieval windows", async () => {
+  const service = await readFile(new URL("../lib/service.mjs", import.meta.url), "utf8");
+  const app = await readFile(new URL("../extension/app.js", import.meta.url), "utf8");
+  const config = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
+  const modelMs = Number(service.match(/AbortSignal\.timeout\(([\d_]+)\)/)[1].replaceAll("_", ""));
+  const clientMs = Number(app.match(/timedOut = true; controller\.abort\(\); \}, ([\d_]+)/)[1].replaceAll("_", ""));
+  let lockSeconds;
+  await analyzeRequest(request(), {
+    env, retrieve: async () => sources,
+    redis: async (command) => {
+      if (command.includes("NX")) lockSeconds = command.at(-1);
+      return command[0] === "GET" ? null : command[0] === "SET" ? "OK" : 1;
+    },
+    callModel: async (request) => modelResult(request)
+  });
+  assert.ok(modelMs < PIPELINE_TIMEOUT_MS);
+  assert.ok(lockSeconds * 1000 > PIPELINE_TIMEOUT_MS + 15000);
+  assert.ok(clientMs > PIPELINE_TIMEOUT_MS + 24000 + 15000);
+  assert.ok(config.functions["api/analyze.mjs"].maxDuration * 1000 > clientMs);
+});
+
+test("a provider content filter is reported without retries or fabricated findings", async (t) => {
+  t.mock.method(console, "error", () => {});
+  let calls = 0;
+  const result = await analyzeRequest(request(), {
+    env, retrieve: async () => sources,
+    redis: async (command) => command[0] === "GET" ? null : command[0] === "SET" ? "OK" : 1,
+    fetchImpl: async () => {
+      calls++;
+      return Response.json({ status: "incomplete", incomplete_details: { reason: "content_filter" }, usage: { output_tokens: 0 } });
+    }
+  });
+  assert.equal(calls, 1);
+  assert.equal(result.status, 502);
+  assert.equal(result.body.error.code, "analysis_filtered");
+  assert.equal(result.body.claims, undefined);
+});
+
+test("section extraction and evidence review each reserve budget before calling a model", async () => {
+  let reserved = 0;
+  let calls = 0;
+  const result = await analyzeRequest(request(), {
+    env, retrieve: async () => sources,
+    redis: async (command) => {
+      if (command.includes("shiftsc:privacy:budget:v1")) { reserved++; return 4_900_000; }
+      return command[0] === "GET" ? null : command[0] === "SET" ? "OK" : 1;
+    },
+    callModel: async (request) => {
+      calls++;
+      assert.equal(reserved, calls, "No unreserved extraction or review call");
+      if (request.text.format.name === "privacy_section") return { analysis: extracted, usage: {} };
+      const { claims } = JSON.parse(request.input[1].content);
+      return { analysis: { checks: claims.map(({ id }) => ({ id,
+        labelSupported: true, summarySupported: true, categorySupported: true, purposesSupported: true,
+        conditionSupported: true, retentionSupported: true, collectionAffirmed: true, browserScopeSupported: true
+      })) }, usage: {} };
+    }
+  });
+  assert.equal(result.status, 200);
+  assert.equal(calls, 2);
+  assert.equal(reserved, 2);
+  assert.equal(result.body.coverage.sectionsCompleted, 1);
+});
+
+test("budget exhaustion between extraction and review returns no unreviewed findings", async () => {
+  let reservations = 0;
+  let calls = 0;
+  let analysisSaved = false;
+  const result = await analyzeRequest(request(), {
+    env, retrieve: async () => sources,
+    redis: async (command) => {
+      if (command.includes("shiftsc:privacy:budget:v1")) return ++reservations === 1 ? 0 : -1;
+      if (command[0] === "SET" && !command.includes("NX")) analysisSaved = true;
+      return command[0] === "GET" ? null : command[0] === "SET" ? "OK" : 1;
+    },
+    callModel: async () => { calls++; return { analysis: extracted, usage: {} }; }
+  });
+  assert.equal(result.status, 429);
+  assert.equal(calls, 1);
+  assert.equal(analysisSaved, false);
+  assert.equal(result.body.claims, undefined);
 });

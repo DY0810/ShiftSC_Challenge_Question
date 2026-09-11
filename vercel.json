@@ -5,7 +5,7 @@
   "outputDirectory": "public",
   "functions": {
     "api/analyze.mjs": {
-      "maxDuration": 60,
+      "maxDuration": 240,
       "includeFiles": "data/snapshots/**"
     }
   }

@@ -17,8 +17,11 @@ QA = ROOT / "output" / "qa"
 OUTPUT = ROOT / "output" / "pdf" / "Privacy_Choices_ShiftSC_Showcase.pdf"
 BROWSER = json.loads((QA / "browser.json").read_text())
 HOSTED = json.loads((QA / "hosted.json").read_text())
+HOSTED_BROWSER = json.loads((QA / "hosted-extension.json").read_text())
 SOURCES = json.loads((QA / "source-probe.json").read_text())
 assert BROWSER["passed"] is True
+assert HOSTED_BROWSER["passed"] is True
+assert {result["serviceId"] for result in HOSTED_BROWSER["results"]} == {"maps", "quizlet", "chatgpt"}
 assert len(SOURCES["results"]) == 5
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 pdfmetrics.registerFont(TTFont("Geist", ROOT / "data/fonts/Geist-Regular.ttf"))
@@ -111,8 +114,8 @@ for index, (title, description) in enumerate([
 
 heading("What I built", 297)
 bottom = image("00-start-viewport.png", LEFT, 320, WIDTH, 292)
-text("<b>Actual extension interface.</b> Preferences stay in the browser. The private backend receives "
-     "only a supported service ID, not the original URL or preference selections.",
+text("<b>Actual extension interface.</b> Preferences stay in the browser. Requests send a supported service ID "
+     "and private access token, not the original URL or preference selections.",
      LEFT, bottom + 9, WIDTH, SMALL)
 
 heading("Three services, three different privacy decisions", 665)
@@ -136,7 +139,7 @@ C.drawString(LEFT, H - 51, "The decisions behind it")
 decisions = [
     ("Agency over a score", "No universal safe/unsafe rating. The student chooses acceptable data and uses, then acknowledges unresolved risks."),
     ("Separate facts from protection", "Company policy, AI interpretation, user-reported changes, and browser-verified controls are different states."),
-    ("Live analysis with honest fallbacks", "Fetch fixed official sources; use an anonymous reader or dated snapshot when blocked. Never interpret a CAPTCHA as policy."),
+    ("Small sections, checked evidence", "Cover each section, copy intact evidence, then run a separate AI check. Unsupported details become unknown, not confident guesses."),
     ("Small and inspectable", "Native extension UI, a small Node backend, and persistent budget reservations. No browsing-history access or autonomous account edits.")
 ]
 top = 72
@@ -148,16 +151,16 @@ line(top + 1)
 
 heading("Verified behavior, not a blanket privacy guarantee", top + 13)
 figure_top = top + 38
-image_bottom = image("02-reduced-fixture-detail.png", LEFT, figure_top, 290, 229)
+image_bottom = image("live-chatgpt-detail.png", LEFT, figure_top, 290, 229)
 right = LEFT + 308
-text("<b>4 conflicts became 3.</b> Chrome's actual location setting changed to Block. "
-     "The synthetic IP-location, content, and activity findings stayed unresolved.",
+text("<b>Actual hosted result.</b> The ChatGPT view connects a training disclosure to unaccepted "
+     "content and model-training preferences. Source and uncertainty warnings stay visible.",
      right, figure_top + 3, 220, SMALL)
-text("<b>36 automated checks passed.</b> Includes an isolated real-Redis test: "
-     "100 concurrent reservation attempts accepted 71 and reserved $4.97, below the $5 limit.",
+text("<b>57 automated checks passed.</b> Includes an isolated real-Redis test: "
+     "300 concurrent small reservations accepted 250, stopping at $5. Earlier spending is preserved.",
      right, figure_top + 68, 220, SMALL)
-text("<b>Evidence boundary.</b> This is a real extension screenshot with visibly labeled "
-     "synthetic policy responses. It proves the interaction and browser control, not live AI accuracy.",
+text("<b>Evidence boundary.</b> This capture uses a live hosted response, not synthetic findings. "
+     "Browser-location controls are tested separately with labeled fixtures. Neither establishes actual company behavior.",
      right, figure_top + 135, 220, SMALL)
 
 next_top = max(image_bottom + 15, figure_top + 210)
@@ -168,17 +171,17 @@ text("<b>Publicly accessible:</b> policies and help pages about collection, purp
      LEFT, next_top + 21, WIDTH, SMALL)
 text("<b>Return:</b> three bounded services make the preference-to-decision flow testable. "
      "Broader coverage would add recurring policy review and site-specific maintenance. "
-     "The AI allowance is capped; no paid model call has been made. "
+     "Live model calls are now exercised; each extraction and evidence check reserves budget against the original $5 allowance. "
      "Educational usefulness is a hypothesis: no student usability study has been completed.",
      LEFT, next_top + 71, WIDTH, SMALL)
 
 status_top = next_top + 126
 C.setFillColor(colors.HexColor("#fff5df"))
 C.rect(LEFT, H - status_top - 50, WIDTH, 50, fill=1, stroke=0)
-status = ("Live hosted analysis verified." if HOSTED["liveAnalysisVerified"] else
-          "Live analysis is not activated: OpenAI and Upstash credentials are still required.")
+status = ("Hosted checks returned source-linked findings for all three services." if HOSTED["liveAnalysisVerified"] else
+          "Live verification is incomplete; consult the latest check report.")
 text(f"<b>Current delivery status:</b> extension ZIP built; backend deployed and authentication checked. "
-     f"{escape(status)} Guided account settings and real-model output remain unverified.",
+     f"{escape(status)} AI interpretations are selective and fallible; actual collection and account settings remain unverified.",
      LEFT + 10, status_top + 8, WIDTH - 20, SMALL)
 
 references_top = status_top + 63
@@ -199,5 +202,5 @@ reader = PdfReader(OUTPUT)
 assert len(reader.pages) == 2
 assert all(page.extract_text().strip() for page in reader.pages)
 assert "synthetic" in reader.pages[1].extract_text().lower()
-assert "credentials" in reader.pages[1].extract_text().lower()
+assert "fallible" in reader.pages[1].extract_text().lower()
 print(f"Created {OUTPUT} (2 pages). Render and visually inspect before delivery.")

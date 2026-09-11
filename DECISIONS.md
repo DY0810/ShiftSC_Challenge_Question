@@ -30,6 +30,18 @@
 - Use persistent, atomic spending reservations rather than in-memory serverless
   counters or provider billing alerts.
 - A source challenge is missing evidence, not proof of good or bad privacy.
+- Analyze consecutive small sections instead of asking one model response to
+  interpret an entire long policy. Preserve every section and its source identity.
+- Copy complete evidence ranges server-side, then use a separate model request
+  to challenge each explanation against its own passage and immediate context.
+  Do not call this independent or human verification.
+- Keep completed section checks cached so a failure later in a policy does not
+  force another paid analysis of earlier sections. Publish no incomplete review.
+- Reserve budget for extraction and evidence checking separately while preserving
+  the same persistent $5 total allowance, including earlier attempts.
+- Preserve supported collection facts when purpose or retention is unknown.
+  Remove unsupported details rather than inventing them; an unknown purpose
+  remains unresolved in the preference comparison.
 
 ## Evidence policy
 Record source capture dates, actual commands, and observed outcomes. Never invent

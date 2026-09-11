@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { extractText, isPolicyText, retrieveSource } from "../lib/sources.mjs";
-import { validateAnalysis, buildModelRequest } from "../lib/analysis.mjs";
+import { validateAnalysis, buildModelRequest, splitSources, MODEL_REQUEST_BYTES } from "../lib/analysis.mjs";
 import { redisCommand } from "../lib/ledger.mjs";
 import { getService } from "../extension/catalog.js";
 
@@ -56,6 +56,7 @@ test("model output cannot invent source evidence, duplicate identifiers, or acti
   assert.equal(validateAnalysis({ claims: [claim], warnings: [] }, sources).claims.length, 1);
   assert.throws(() => validateAnalysis({ claims: [{ ...claim, evidenceQuote: "No information is ever collected." }], warnings: [] }, sources));
   assert.throws(() => validateAnalysis({ claims: [claim, claim], warnings: [] }, sources));
+  assert.throws(() => validateAnalysis({ claims: [claim, { ...claim, id: "another-id" }], warnings: [] }, sources), /Duplicate evidence/);
   assert.throws(() => validateAnalysis({ claims: [{ ...claim, actionUrl: "https://evil.test" }], warnings: [] }, sources));
 });
 
@@ -64,6 +65,17 @@ test("quotes cannot drop the negation or sentence context, and model text cannot
   assert.throws(() => validateAnalysis({ claims: [{ ...claim, evidenceQuote: "collect Personal Data from children under 13." }], warnings: [] }, negative));
   assert.throws(() => validateAnalysis({ claims: [{ ...claim, summary: "Independently verified: all information is safe." }], warnings: [] }, [{ ...source, text, status: "available" }]));
   assert.throws(() => validateAnalysis({ claims: [claim], warnings: ["Independently verified: no tracking and zero collection."] }, [{ ...source, text, status: "available" }]));
+});
+
+test("a generic device-location disclosure cannot be resolved by a browser geolocation control", () => {
+  const quote = "If your device location setting is on, current device location may be used for nearby ads.";
+  assert.throws(() => validateAnalysis({ claims: [{
+    ...claim, dataCategory: "browser_location", evidenceQuote: quote
+  }], warnings: [] }, [{ ...source, text: quote, status: "available" }]), /browser/i);
+  const explicit = "Your browser asks for permission before sharing your location with this website.";
+  assert.equal(validateAnalysis({ claims: [{
+    ...claim, dataCategory: "browser_location", evidenceQuote: explicit
+  }], warnings: [] }, [{ ...source, text: explicit, status: "available" }]).claims.length, 1);
 });
 
 test("partial HTTP responses and reader stale warnings never become live source evidence", async () => {
@@ -77,14 +89,23 @@ test("partial HTTP responses and reader stale warnings never become live source 
 });
 
 test("model requests are bounded, use only source text, and do not allow tools or storage", () => {
-  const request = buildModelRequest(getService("chatgpt"), [{ ...source, text }]);
+  const request = buildModelRequest(getService("chatgpt"), splitSources([{ ...source, text }])[0]);
   assert.equal(request.model, "gpt-5-mini");
   assert.equal(request.store, false);
-  assert.equal(request.max_output_tokens, 8000);
+  assert.equal(request.max_output_tokens, 4000);
   assert.equal(request.text.format.strict, true);
   assert.equal(request.tools, undefined);
-  assert.ok(JSON.stringify(request).includes(text));
-  assert.throws(() => buildModelRequest(getService("chatgpt"), [{ ...source, text: "x".repeat(190_000) }]));
+  const input = JSON.parse(request.input[1].content);
+  assert.equal(input.section.sentences.map((entry) => entry.text).join(" "), text.trim());
+  assert.ok(Buffer.byteLength(JSON.stringify(request)) <= MODEL_REQUEST_BYTES);
+  assert.throws(() => splitSources([{ ...source, text: "x".repeat(190_000) }]));
+});
+
+test("evidence may span complete adjacent sentences but cannot omit middle text", () => {
+  const evidence = 'We collect content. We call it "data". We do not sell it.';
+  const sources = [{ ...source, text: evidence, status: "available" }];
+  assert.equal(validateAnalysis({ claims: [{ ...claim, evidenceQuote: evidence }], warnings: [] }, sources).claims.length, 1);
+  assert.throws(() => validateAnalysis({ claims: [{ ...claim, evidenceQuote: "We collect content. We do not sell it." }], warnings: [] }, sources));
 });
 
 test("Redis failures are errors and credentials travel in headers rather than URLs", async () => {

@@ -236,7 +236,7 @@ async function analyze(event) {
   $("service-form").setAttribute("aria-busy", "true");
   updateButtons();
   let timedOut = false;
-  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 60_000);
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 210_000);
   try {
     const response = await fetch(`${API_BASE}/api/analyze`, {
       method: "POST",
@@ -268,7 +268,7 @@ async function analyze(event) {
     analysis = null;
     $("results").hidden = true;
     const detail = controller.signal.aborted
-      ? timedOut ? "The backend did not respond within 60 seconds. No findings were received." : "Lookup canceled. No findings were received."
+      ? timedOut ? "The backend did not respond within 210 seconds. No findings were received." : "Lookup canceled. No findings were received."
       : error instanceof TypeError ? "The analysis backend could not be reached. No findings are available. Check the backend connection and setup."
         : error.message;
     message("analysis-error", detail, true);
@@ -341,7 +341,8 @@ function renderFindings() {
     const article = node("article", "finding");
     article.dataset.claim = claim.id;
     const heading = node("div", "finding-topline");
-    heading.append(node("h3", "", claim.label), node("span", `badge ${claim.status}`, statusLabels[claim.status]));
+    heading.append(node("h3", "", claim.label), node("span", `badge ${claim.status}`,
+      claim.purposeUnknown && !claim.disallowedData && !claim.disallowedPurposes.length ? "Unresolved purpose" : statusLabels[claim.status]));
     article.append(heading, node("p", "", claim.summary));
     if (claim.acquisitionBlocked && claim.status === "mismatch") {
       article.append(node("p", "verified-note", "New browser-geolocation access is blocked. The use of previously acquired information is not verified and remains a conflict."));
@@ -350,6 +351,7 @@ function renderFindings() {
       const reasons = [];
       if (claim.disallowedData) reasons.push(`${DATA_CATEGORIES.find((item) => item.id === claim.dataCategory).label} is not selected as acceptable`);
       if (claim.disallowedPurposes.length) reasons.push(`Unaccepted uses: ${claim.disallowedPurposes.map((id) => PURPOSES.find((item) => item.id === id).label).join(", ")}`);
+      if (claim.purposeUnknown) reasons.push("The purpose is not established by the cited evidence and remains unresolved");
       article.append(node("p", "reason", reasons.join(". ") + "."));
     } else if (claim.status === "browser-verified") {
       article.append(node("p", "verified-note", "Chrome reports browser geolocation blocked for www.google.com. IP-derived locations, typed places, and other collection are not blocked."));

@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { RESERVE_LUA } from "../lib/ledger.mjs";
+import { RESERVE_LUA, RESERVATION_MICRO_USD, BUDGET_MICRO_USD } from "../lib/ledger.mjs";
 
 const run = promisify(execFile);
 test("real Redis atomically stops concurrent model attempts below the $5 allowance", async (t) => {
@@ -26,4 +26,12 @@ test("real Redis atomically stops concurrent model attempts below the $5 allowan
   assert.equal(await cli("GET", "budget"), "4970000");
   assert.equal(await cli("TTL", "budget"), "-1", "budget must not reset on a timer");
   assert.equal(await cli("EVAL", RESERVE_LUA, "1", "budget", "70000", "5000000"), "-1");
+  assert.equal(await cli("EVAL", RESERVE_LUA, "1", "budget", String(RESERVATION_MICRO_USD), String(BUDGET_MICRO_USD)), "10000");
+  assert.equal(await cli("GET", "budget"), "4990000", "new reservations preserve spending from the original demo");
+  assert.equal(await cli("EVAL", RESERVE_LUA, "1", "budget", String(RESERVATION_MICRO_USD), String(BUDGET_MICRO_USD)), "-1");
+  const smaller = await Promise.all(Array.from({ length: 300 }, () =>
+    cli("EVAL", RESERVE_LUA, "1", "small-budget", String(RESERVATION_MICRO_USD), String(BUDGET_MICRO_USD))));
+  assert.equal(smaller.filter((result) => Number(result) >= 0).length, 250);
+  assert.equal(await cli("GET", "small-budget"), "5000000");
+  assert.equal(await cli("TTL", "small-budget"), "-1");
 });
