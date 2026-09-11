@@ -3,6 +3,10 @@
 An educational Chrome extension for reviewing Google Maps, Quizlet, and ChatGPT
 privacy disclosures before visiting.
 
+Built by DongYeop Lee for the ShiftSC Fall 2026 Cyber Privacy challenge.
+Start with the [interviewer introduction and full setup guide](https://github.com/DY0810/ShiftSC_Challenge_Question#start-here-for-interviewers)
+for the rationale, walkthrough, troubleshooting, and optional developer setup.
+
 ## Download and Run
 
 1. Download `privacy-choices-extension.zip` below and extract it.
@@ -12,6 +16,21 @@ privacy disclosures before visiting.
    by the owner. The token is not included in this public release.
 
 No Node.js or personal OpenAI key is needed to run the hosted extension.
+Request the private token from DongYeop through the interview/application
+correspondence. Do not enter an OpenAI key or publish the token in a GitHub issue.
+The backend URL is not a standalone web app; open the interface through Chrome's
+extensions menu.
+
+## Try the Workflow
+
+Choose a supported service, select acceptable data types and optional uses, and
+click **Analyze policy**. Expand **Details & policy evidence**, then choose
+**Find reductions** and **Review remaining risks**. Finish with **Do not visit**
+to inspect the decision flow without opening the company website.
+
+Guided changes do not remove conflicts automatically. A Maps browser-location
+block affects all `www.google.com` pages; restore the extension rule after a
+control demonstration. It does not necessarily resolve any returned finding.
 
 ## Showcase
 

@@ -1,176 +1,374 @@
 # Privacy Choices
 
-ShiftSC Fall 2026 Cyber Privacy challenge prototype. Review Google Maps, Quizlet,
-or ChatGPT before visiting, compare disclosed practices with local preferences,
-and apply a narrowly verified browser-location control.
+**A privacy decision aid for students, built for the ShiftSC Fall 2026 Cyber Privacy challenge.**
 
-## Current Delivery
+By DongYeop Lee.
 
-- The Chrome extension and private backend are implemented.
-- Hosted endpoint: `https://shiftsc-privacy-choices.vercel.app/api/analyze`.
-- The owner's OpenAI and Upstash credentials are configured in Vercel. Reviewers
-  need only the hosted extension package and the private demo access token.
-  A fresh local checkout still needs its own provider configuration.
-- The backend analyzes small policy sections and checks proposed explanations
-  against their cited passages in a separate model call. This is not a guarantee
-  of semantic accuracy or a complete inventory of collected information.
-- Browser QA uses clearly labeled synthetic policy responses. Real Chrome
-  location settings are tested, but this is not live model or account proof.
-- Five official source snapshots are included; see `data/SOURCE_STATUS.md`.
+Privacy Choices is a desktop Chrome extension that helps a student answer:
+**"Does this service's use of my information match what I am comfortable sharing?"**
+It explains public privacy disclosures, compares them with the student's preferences,
+and offers limited controls before the student decides whether to visit.
 
-## Install
+The MVP supports **Google Maps, Quizlet, and ChatGPT's desktop websites**.
+It is an educational prototype, not a tracker scanner, security rating, or anonymity tool.
 
-Download the ready-made extension ZIP and showcase PDF from the repository's
-**Releases** page. Extract the extension ZIP, then load its folder in desktop
-Chrome using `chrome://extensions` -> Developer mode -> Load unpacked.
-Enter the private demo token supplied separately by the owner.
+## Start Here: For Interviewers
 
-The public download does not include access credentials. A reviewer does not
-need their own OpenAI account or a local server.
+| What you want to do | Where to start |
+| --- | --- |
+| Understand the project without installing anything | [Two-page showcase PDF](docs/Privacy_Choices_ShiftSC_Showcase.pdf) |
+| Try the extension | [Download the Chrome extension ZIP](https://github.com/DY0810/ShiftSC_Challenge_Question/releases/download/v1.0.0-mvp/privacy-choices-extension.zip), then follow the steps below |
+| Find both deliverables | [MVP release](https://github.com/DY0810/ShiftSC_Challenge_Question/releases/tag/v1.0.0-mvp) |
+| Read the design rationale | [Decision record](DECISIONS.md) |
+| Inspect the security-review scope | [Security review](docs/SECURITY_REVIEW.md) |
 
-Use Node.js 22 to build the hosted extension from a fresh clone:
+**Before trying the hosted demo, obtain the private demo token from DongYeop through
+the interview/application correspondence.** It is deliberately excluded from GitHub.
+Do not enter an OpenAI API key in the extension or post credentials in an issue.
+
+You need desktop Chrome, internet access, permission to load an unpacked extension,
+and the demo token. **You do not need Node.js, a terminal, your own OpenAI account,
+payment, or a local server** to use the downloaded extension.
+
+**Availability:** this is a time-limited private demo. The original $5 application
+allowance includes development and failed requests and is nearly exhausted.
+Unchanged cached results avoid new model charges; changed or expired sources may
+require calls that the remaining allowance cannot cover. The current provider key
+expires **October 11, 2026** unless the owner rotates it. If access is unavailable,
+the PDF and source remain reviewable without credentials.
+
+## Why I Built It
+
+Privacy policies describe collection and data use, but interpreting them is work
+the student usually has to do alone. A universal "safe" score also ignores that
+different students have different boundaries.
+
+This project connects five questions:
+
+1. What information does the service say it collects?
+2. Which information am I comfortable sharing?
+3. For which purposes can that information be used?
+4. What can I change, and what remains uncertain?
+5. Knowing the remaining risks, do I still want to use it?
+
+The central distinction is that **agreeing to share information is not the same
+as agreeing to every downstream use**. Submitting text to a service and allowing
+that text to train models are separate choices.
+
+## Install the Hosted Demo
+
+1. Download **`privacy-choices-extension.zip`** from the [release](https://github.com/DY0810/ShiftSC_Challenge_Question/releases/tag/v1.0.0-mvp).
+   Do not choose GitHub's automatically generated "Source code" ZIP for this path.
+2. Extract it into a folder you can keep on your computer.
+3. Enter **`chrome://extensions`** in desktop Chrome's address bar.
+4. Turn on **Developer mode**.
+5. Click **Load unpacked** and select the extracted folder containing `manifest.json`.
+   Select the folder, not the ZIP.
+6. Open Chrome's extensions menu and click **Privacy Choices**. Pinning it is optional.
+7. Click **Configure access token**, or open the settings icon. Enter the private
+   demo token, click **Save token**, then **Close**.
+
+This is an unpacked MVP, not a Chrome Web Store listing. If your organization
+disables Developer mode or extension installation, use the PDF/source walkthrough;
+do not bypass its device-management policy.
+
+The interface opens from the extension toolbar. The Vercel URL is a backend API,
+**not a standalone web application** that interviewers should open directly.
+
+## Suggested Demo Walkthrough
+
+### 1. Choose a Service and Set Your Boundaries
+
+Select ChatGPT, Quizlet, or Google Maps, or enter a supported service URL.
+Arbitrary websites and native apps are outside the MVP's scope.
+
+Under **Your preferences**, use **None**, **All**, or individual checkboxes for
+identity, browser location, approximate location, device identifiers, activity,
+content, media, and payment information. Expand **Optional uses I accept** to
+choose analytics, advertising, AI training, or third-party sharing.
+
+These selections express preferences. They do not grant browser permissions or
+change an account's settings.
+
+### 2. Analyze and Inspect the Evidence
+
+Click **Analyze policy**. A new analysis can take over a minute; cached results
+still require source retrieval. You can cancel, and the extension stops waiting
+after 210 seconds.
+
+Review **Policy findings**, then expand **Details & policy evidence**:
+
+- Which data type and use conflict with the selected preferences?
+- What passage supports the explanation?
+- Are conditions and retention stated, or unknown?
+- Does **Sources & retrieval** identify direct retrieval, a public reader, or a dated snapshot?
+
+Change a preference and observe the comparison update locally. A useful ChatGPT
+example, when returned by the current analysis, is allowing submitted content while
+leaving model training unaccepted. Finding counts are not fixed; absence of a
+finding is not proof of no collection.
+
+### 3. Find Reductions Without Overclaiming Protection
+
+Click **Find reductions**.
+
+| Service | What the MVP offers | What it does not claim |
+| --- | --- | --- |
+| Google Maps | An optional Chrome browser-location block, effective-setting readback, and restoration | It does not hide IP location, typed places, previously collected data, or every location source |
+| Quizlet | A guide to ads and cookie settings | It does not automatically change or verify your account |
+| ChatGPT | Guides to model-training choices and Temporary Chat | It does not prevent submitted content reaching the service or verify your account configuration |
+
+For a Maps control demonstration, review the confirmation and grant the optional
+permission only if you agree. The rule covers **all `https://www.google.com/*`
+pages**, not just Maps, and persists until removed. Use **Restore extension rule**
+afterward. Restoration removes this extension's override; it does not force
+Chrome to allow location.
+
+A successful browser block does not necessarily reduce the current mismatch count.
+Only an explicitly supported browser-permission geolocation finding can be resolved
+by that control. Disallowed downstream uses remain unresolved.
+
+For guided settings, checking **I made a change in the service settings** records
+your report but does not remove related conflicts. Unknown purposes also stay
+unresolved, even when all listed uses are selected.
+
+Opening a policy or guide contacts that company and can send normal browser
+metadata and cookies. Those links require confirmation.
+
+### 4. Make the Final Decision
+
+Click **Review remaining risks**. The visit button stays disabled until you
+acknowledge the remaining risks. You can then confirm a visit or choose **Do not visit**.
+
+For an interview walkthrough, **Do not visit** demonstrates the decision flow
+without opening the company site. It keeps you in the extension; it does not close
+other tabs or erase information collected before the review.
+
+## How It Works
+
+```text
+Service name / URL + preferences
+              |
+              v
+Chrome extension: recognize a supported service locally
+              |
+              | serviceId + private demo token only
+              v
+Vercel backend: authenticate and retrieve official source text
+              |
+              v
+Small policy sections -> AI extraction -> separate AI evidence check
+              |
+              | source-linked findings, unknowns, and retrieval metadata
+              v
+Chrome extension: compare locally -> offer controls -> student decides
+```
+
+The backend tries fixed official HTTPS sources, then a public reader, then dated
+saved source text. Failed or challenged pages are not treated as privacy evidence.
+Source methods, dates, and hashes accompany the result.
+
+Available text is split into consecutive sections of at most 8,000 UTF-8 bytes.
+No section is silently truncated; excessive input fails explicitly. Each section
+can propose up to three findings. The server copies consecutive source sentences
+as evidence. A separate AI request checks explanations, categories, and browser
+applicability against that passage and its immediate context.
+
+Invalid or unsupported candidates are excluded and counted. Unsupported purposes,
+conditions, or retention details become unknowns when the collection fact itself
+remains supported. Failed or refused sections stop the overall analysis without
+publishing an incomplete set of section results.
+
+Three sections run at a time. Completed section checks and complete results are
+cached by content/version for seven days. A later user-initiated request can reuse
+finished sections after a timeout. The persistent spending ledger reserves $0.02
+before each extraction or review call, including failed calls, against the original
+$5 cap. Earlier reservations remain counted; deployment does not reset the allowance.
+
+**The second AI call is a consistency check, not independent verification.**
+Exact quotations establish that text exists in the source. Neither that nor an
+AI approval guarantees the interpretation is correct or that a company follows
+its policy. Findings are selective, not an exhaustive inventory.
+
+## Connection to Cyber Privacy
+
+- **Informed consent:** understandable disclosures before the decision to visit.
+- **Data minimization:** identify unwanted sharing and offer limited, supported reductions.
+- **Purpose awareness:** separate collection from advertising, analytics, training, and sharing.
+- **Transparency:** show evidence, source dates, unknowns, and failed checks.
+- **User control:** keep the decision with the student rather than assigning a
+  universal safety score or autonomously changing account settings.
+
+The extension applies privacy principles to its own design:
+
+| Data or capability | Handling |
+| --- | --- |
+| Entered URL and preference selections | Processed locally; not included in analysis requests |
+| Service ID and demo token | Sent to the configured backend for the requested analysis |
+| Preferences and demo token | Stored in the local Chrome profile, not an encrypted secret vault |
+| Public policy text | Retrieved by the backend and processed by OpenAI; a public reader may be used |
+| Browsing history and page contents | No history monitoring or content scripts |
+| Browser-location control | Optional permission requested through an explicit user action |
+| Provider credentials | Kept on the backend, never bundled in the extension |
+
+Hosting and API providers may still receive IP addresses or maintain infrastructure
+logs. `store: false` in the OpenAI request is not a promise of zero provider retention.
+The extension is not a VPN, cookie-banner blocker, traffic inspector, or privacy audit.
+
+## What Was Verified
+
+Recorded for the **September 11, 2026 MVP release**, not continuous availability:
+
+- **57 local tests** passed, covering evidence validation, unknown purposes,
+  cancellation, section caching, and spending checks.
+- A real Redis concurrency test confirmed small-call reservations stop at $5
+  and preserve reservations made by the earlier implementation.
+- The **24-file package** passed syntax, permission/origin checks,
+  credential-pattern checks, and ZIP integrity.
+- Chromium tests exercised location set/readback/restoration, consent, responsive
+  layouts, keyboard focus, and reduced motion with labeled synthetic responses.
+- A separate installed-extension check completed **actual hosted analysis and
+  decision workflows for all three services**, with service IDs as the only
+  request-body field and no company visit.
+
+These checks do not prove complete finding coverage, semantic accuracy, real
+tracking prevention, or individual account settings. No student usability study
+has been completed. The [security review](docs/SECURITY_REVIEW.md) distinguishes
+the initial audit from the later pipeline update.
+
+## Troubleshooting
+
+| What you see | What to do |
+| --- | --- |
+| Missing `manifest.json` | Extract the extension ZIP and select the folder directly containing that file |
+| Developer mode unavailable | Use an authorized personal browser or review the PDF; do not bypass administrator restrictions |
+| Token missing or rejected | Request the demo token from DongYeop; do not use an OpenAI key or newly generated local token |
+| Unsupported service | Choose Maps, Quizlet, or ChatGPT |
+| Slow response | Wait or cancel; a cold review can take over a minute |
+| Rate limit | Wait a minute before requesting again |
+| Budget exhausted / provider unavailable | Contact the owner and use the PDF/source meanwhile; reviewers should not need to purchase credits |
+| Failed, filtered, or no supported findings | Treat this as missing evidence, not a favorable privacy result; avoid repeated paid retries |
+| Conflicts remain after a setting change | Guided changes are unverified, unknown purposes stay unresolved, and browser controls resolve only narrowly supported claims |
+
+## Developer Setup: Optional
+
+This section is **not required for interviewers using the release ZIP**.
+Commands below use a macOS/Linux shell. Development requires Node.js 22 and npm;
+packaging also uses the `zip` executable.
+
+### Build Against the Existing Hosted Backend
 
 ```sh
+git clone https://github.com/DY0810/ShiftSC_Challenge_Question.git
+cd ShiftSC_Challenge_Question
 npm ci
 API_BASE=https://shiftsc-privacy-choices.vercel.app npm run package
 ```
 
-Extract `dist/privacy-choices-extension.zip`, open `chrome://extensions`, enable
-Developer mode, choose **Load unpacked**, and select the extracted folder that
-contains `manifest.json`. Open Privacy Choices from the extension toolbar.
+Load `dist/extension` in Chrome and use the owner's private demo token.
+This does not create a separate spending allowance.
 
-Enter the owner's private demo token in the extension's settings.
-It is not your OpenAI key. Share it privately, never in a public PDF or repository.
-Provider keys must never be placed in the extension. Once the hosted package is
-built, reviewers do not need Node.js or a local server. A locally generated token
-does not authenticate to the owner's hosted deployment.
+### Run Your Own Backend Locally
 
-## Activate the Backend
-
-1. Add `OPENAI_API_KEY`, `UPSTASH_REDIS_REST_URL`, and
-   `UPSTASH_REDIS_REST_TOKEN` to `.env.local`. This file is ignored and excluded
-   from deployments. Use a dedicated API project; billing alerts are not the
-   application's hard cap.
-2. Create a persistent Upstash Redis instance with no eviction of the spending
-   key, then configure the same variables as **Production** environment variables
-   in your Vercel project, including `DEMO_ACCESS_TOKEN`. Do not overwrite a
-   running demo's token unless you intend to revoke its reviewers' access.
-3. Deploy with `vercel deploy --prod` to your own project.
-4. Run `node --env-file=.env.local scripts/verify-hosted.mjs`. It checks
-   authentication and all three services; uncached analyses make paid extraction
-   and review calls within the reserved allowance. `SERVICE_IDS=quizlet,chatgpt`
-   limits a focused check to those services without claiming Maps was tested.
-5. Run `node --env-file=.env.local scripts/hosted-extension-check.mjs` after
-   packaging, then inspect the explanations and their evidence. Passing transport,
-   schema, and browser checks alone does not establish semantic correctness.
-
-The backend needs a real Redis service, not a per-function in-memory substitute.
-Do not delete/reset `shiftsc:privacy:budget:v1` or replace its database while this
-demo is active: that would reset the total allowance.
-
-## Local Development and Checks
+From the cloned repository:
 
 ```sh
 npm ci
 node scripts/setup-local.mjs
-npx playwright install chromium
-npm test
-npm run test:browser
+```
+
+The setup script creates private `.env.local` with a random local access token.
+Configure the following values in that ignored file:
+
+| Variable | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | Your funded OpenAI API project's credential with Responses API access |
+| `UPSTASH_REDIS_REST_URL` | HTTPS REST endpoint for your persistent Redis database |
+| `UPSTASH_REDIS_REST_TOKEN` | Database credential allowing the required reads, writes, and Lua operations |
+| `DEMO_ACCESS_TOKEN` | Private bearer token accepted by your backend; generated by the setup script |
+| `PORT` | Local listener port; defaults to `4317` |
+
+Use a dedicated Redis database with eviction disabled. Do not delete or reset
+`shiftsc:privacy:budget:v1`, or replace its database, to bypass the allowance.
+Provider billing and hosting/storage charges are separate from the application cap.
+
+```sh
 npm run dev
 ```
 
-Load the source `extension/` directory for local development; its backend is
-`http://127.0.0.1:4317`. The ordinary browser preview shows the actual interface
-but cannot use extension storage or browser controls.
+Load the repository's `extension/` folder in Chrome and enter your **local**
+`DEMO_ACCESS_TOKEN`. Its backend is `http://127.0.0.1:4317`.
+The ordinary browser page at that address is an interface preview only; it cannot
+provide Chrome extension storage and browser controls.
+
+If that port is occupied, choose a free port, start with `PORT=<port> npm run dev`,
+and build a matching package with
+`API_BASE=http://127.0.0.1:<port> npm run package`. Load that `dist/extension`
+folder instead. The extension and backend must use the same port.
+
+### Deploy Your Own Hosted Backend
+
+Link the repository to your own Vercel project and configure the four credential
+variables above as Production environment variables. `PORT` is local-only.
+Use your own provider credentials and Redis instance, then run:
+
+```sh
+npx vercel deploy --prod
+API_BASE=https://YOUR-PROJECT.vercel.app npm run package
+```
+
+Replace the example origin with your actual deployment origin. Load the generated
+extension and enter that deployment's token. Never commit `.env.local`, include
+credentials in screenshots, or put provider keys in extension files.
+
+### Run Checks
+
+```sh
+npm test
+npx playwright install chromium
+npm run test:browser
+npm run package
+npm run check
+npm audit
+```
+
+The Redis integration test requires `redis-server` and `redis-cli`; it reports a
+skip if unavailable. Browser tests use isolated profiles and labeled synthetic
+responses. The explicitly confirmed Maps visit may contact Google; subsequent
+observed subresources are intercepted.
+
+To check the actual owner-hosted demo after building its hosted package:
 
 ```sh
 API_BASE=https://shiftsc-privacy-choices.vercel.app npm run package
-npm run check
-node scripts/source-probe.mjs
+node --env-file=.env.local scripts/verify-hosted.mjs
+node --env-file=.env.local scripts/hosted-extension-check.mjs
 ```
 
-The atomic-budget integration check uses `redis-server` and `redis-cli` on an
-isolated temporary Unix socket. It reports a skip if Redis is not installed.
-Browser evidence lives in `output/qa/`. Tests use a temporary extension copy with
-`contentSettings` pregranted for the granted-permission case; the distributed
-manifest leaves that permission optional. Permission denial is covered separately
-by helper tests. The confirmed Maps visit may reach Google from the isolated test
-profile; requests before confirmation must not.
+**Live checks can consume the remaining allowance.** Use the owner's token in
+`.env.local` for the owner-hosted demo. `SERVICE_IDS=quizlet,chatgpt` limits a focused
+check without claiming Maps was tested. The installed-extension checker currently
+targets the original hosted demo; do not use it unchanged to assert that a
+different deployment was verified.
 
-## Architecture and Boundaries
+## Repository Guide
 
-- MV3 extension: native HTML/CSS/JavaScript, local storage, optional
-  `contentSettings`, one permitted backend origin. No history monitoring or
-  content scripts.
-- `POST /api/analyze` accepts only `{ "serviceId": "maps" }` (or `quizlet`,
-  `chatgpt`) with a bearer demo token. Extra fields and unknown services fail.
-- Sources are fixed official URLs. Retrieval tries direct HTTPS, an anonymous
-  public reader, then a source-identified dated snapshot. No paid reader API.
-  Denied, partial, warning-bearing, or malformed sources fail closed.
-- OpenAI Responses uses `gpt-5-mini`, strict JSON output, no tools, and
-  `store: false`. Only public policy content goes to the model, never preferences,
-  user URLs, account cookies, or conversations. This does not promise zero provider
-  retention or no infrastructure metadata.
-- Every available source is split into consecutive sections of at most 8,000
-  UTF-8 bytes, with adjacent sentence context. Nothing is silently truncated.
-  The 32-section ceiling fails explicitly if a source cannot fit.
-- Each section yields at most three candidate findings. The server resolves
-  sentence ranges to intact quotations; another model call checks each field,
-  affirmative collection, and desktop-browser applicability against the cited
-  passage and its immediate neighbors. Unsupported candidates are excluded.
-- If a collection fact is supported but its purpose, condition, or retention
-  detail is not, that detail is replaced with an explicit unknown. An unknown
-  purpose remains unresolved even when all listed preference options are accepted.
-- Whole-sentence matching proves quotation integrity, **not semantic entailment**.
-  A second AI judgment can also be wrong. Excluded findings and source gaps are
-  disclosed; missing findings are not evidence that information is not collected.
-- Three sections run at a time. Any failed or refused section stops the analysis
-  without publishing partial findings or automatically retrying the provider.
-  Completed section checks and complete analyses are cached by content/version
-  for seven days, so a later user-initiated attempt can reuse completed work.
-- The $5 allowance reserves $0.02 before **each** extraction or review call.
-  Reservations persist even when calls fail. The existing ledger is retained,
-  including all earlier $0.07 reservations; it is never reset by deployment.
-  With an empty ledger, at most 250 small calls fit. A review uses multiple calls.
-- Each call is bounded to <=32,000 UTF-8 request bytes and <=4,000 output tokens
-  (<=1,800 for review). The reservation includes message-overhead margin at the
-  documented September 11, 2026 prices of $0.25/M input and $2/M output tokens.
-  Recheck prices before reactivating a later demo. Hosting/storage charges are
-  separate; no paid infrastructure upgrades were authorized.
-- Provider calls time out after 75 seconds, section work after 160 seconds, and
-  the extension after 210 seconds. The Vercel function limit is 240 seconds.
-  Initial reviews may take over a minute; cached results avoid new model calls,
-  but source retrieval still runs to check the content hash.
-- Google Maps: the native geolocation rule covers all `https://www.google.com/*`
-  pages in the regular profile, persists until removed, and does not hide IP
-  location, typed addresses, prior data, or downstream uses.
-- Quizlet and ChatGPT choices are guided, not automated account changes.
-  User-reported changes remain unresolved. All/None express preferences and never
-  grant browser or account permissions.
-- External source/help links require confirmation. Declining a visit stays in the
-  extension. No claim that leaving erases information collected earlier.
+| Path | Responsibility |
+| --- | --- |
+| [`extension/`](extension/) | Interface, local preferences, service recognition, browser controls |
+| [`extension/catalog.js`](extension/catalog.js) | Supported services, categories, official sources, trusted action URLs |
+| [`extension/core.js`](extension/core.js) | Service matching and preference/mismatch classification |
+| [`api/analyze.mjs`](api/analyze.mjs) | Request validation and origin handling |
+| [`lib/sources.mjs`](lib/sources.mjs) | Bounded retrieval and dated fallback handling |
+| [`lib/analysis.mjs`](lib/analysis.mjs) | Section extraction, evidence ranges, and review validation |
+| [`lib/service.mjs`](lib/service.mjs) | Authentication, model orchestration, caching, and failures |
+| [`lib/ledger.mjs`](lib/ledger.mjs) | Atomic spending reservations and rate limiting |
+| [`data/SOURCE_STATUS.md`](data/SOURCE_STATUS.md) | Source acquisition details and verification limits |
+| [`test/`](test/) | Local regression and integration checks |
+| [`scripts/`](scripts/) | Packaging, browser checks, hosted checks, and PDF generation |
+| [`docs/`](docs/) | Showcase, release guide, and security-review notes |
 
-## Evidence and Showcase
-
-[DECISIONS.md](DECISIONS.md) preserves the product choices.
-[The two-page showcase](docs/Privacy_Choices_ShiftSC_Showcase.pdf) explains the
-implementation and rationale; [the security review](docs/SECURITY_REVIEW.md)
-records the publication checks and their limits.
-The PDF builder is `scripts/build-showcase.py`; local regeneration writes
-`output/pdf/Privacy_Choices_ShiftSC_Showcase.pdf`. Its screenshots must come from
-the real browser check and retain the fixture label while live analysis is not
-verified. Update evidence before regenerating. Local QA outputs and private
-workflow notes are not distributed in this repository.
-
-## Design Refinement
-
-The current extension bundles Geist (SIL OFL) without remote font requests, places
-the service lookup before preferences on narrow screens, and keeps supporting
-policy details expandable. Keyboard focus and expanded evidence survive browser
-verification refreshes. Loading motion respects reduced-motion preferences.
-
-The browser check covers desktop and narrow layouts, text fit, keyboard focus,
-local fonts, and reduced motion. `scripts/compare-design.py` is an optional local
-comparison tool and needs separately supplied design reference images.
-The PDF uses the local static Geist files in `data/fonts/`; its screenshots remain
-explicitly fixture-backed until actual live analysis has been verified.
+The native HTML/CSS/JavaScript interface bundles fonts and icons locally.
+There is no remote font request, browsing-history permission, or autonomous
+account-editing agent. Local QA outputs and private workflow notes are not
+distributed in the repository.
